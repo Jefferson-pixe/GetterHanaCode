@@ -1,0 +1,30 @@
+[
+   {
+      "SCHEMA":"SBO_LAARSA",
+      "PROCEDURES":[
+         "SBO_SP_TRANSACTIONNOTIFICATION",
+         "SBO_SP_POSTTRANSACTIONNOTICE",
+         "M1_TN_OINV"
+      ]
+   },
+   {
+      "SCHEMA":"SBO_BLINTEC",
+      "PROCEDURES":[
+         "SBO_SP_POSTTRANSACTIONNOTICE"
+      ]
+   },
+    {
+        "SCHEMA":"SBO_AURUM",
+        "PROCEDURES":[
+            "SBO_SP_POSTTRANSACTIONNOTICE"
+        ]
+   },
+   {
+        "SCHEMA":"SBO_ALFISA",
+        "PROCEDURES":[
+            "SBO_SP_TRANSACTIONNOTIFICATION",
+            "SBO_SP_POSTTRANSACTIONNOTICE"
+        ]
+   }
+]
+
