@@ -53,6 +53,10 @@ END IF;
 
 
 
+/************************************* Este es un nuevo cambio para GIT ****************************************/
+
+
+
 -- Select the return values
 select :error, :error_message FROM dummy;
 
