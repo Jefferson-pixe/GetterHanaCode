@@ -1,6 +1,6 @@
 -- Schema : SBO_LAARSA
 -- Proc   : SBO_SP_TRANSACTIONNOTIFICATION
--- Export : 2025-08-13 16:00:19
+-- Export : 2025-08-13 16:20:44
 -- Origen : 192.168.3.242
 
 CREATE PROCEDURE SBO_SP_TransactionNotification
