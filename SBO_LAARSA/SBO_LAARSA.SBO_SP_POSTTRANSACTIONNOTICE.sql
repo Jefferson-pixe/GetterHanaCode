@@ -1,0 +1,160 @@
+-- Schema : SBO_LAARSA
+-- Proc   : SBO_SP_POSTTRANSACTIONNOTICE
+-- Export : 2025-08-13 10:51:36
+-- Origen : 192.168.3.242
+
+CREATE PROCEDURE SBO_SP_PostTransactionNotice
+(
+	in object_type nvarchar(30), 				-- SBO Object Type
+	in transaction_type nchar(1),			-- [A]dd, [U]pdate, [D]elete, [C]ancel, C[L]ose
+	in num_of_cols_in_key int,
+	in list_of_key_cols_tab_del nvarchar(255),
+	in list_of_cols_val_tab_del nvarchar(255)
+)
+LANGUAGE SQLSCRIPT
+AS
+-- Return values
+error  int;				-- Result (0 for no error)
+error_message nvarchar (200); 		-- Error string to be displayed\
+DocEntry int;
+USERCODE nvarchar (50) = '';
+UPDATEDATE DATE = '';
+UPDATETIME INT = 0;
+begin
+
+error := 0;
+error_message := N'Ok';
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+
+IF ((:object_type ='10000013' OR :object_type ='112')  AND :transaction_type='A') 
+THEN
+	
+	SELECT 
+	COUNT(*)
+	INTO DocEntry
+	FROM "ODRF" T0
+	WHERE 
+	T0."ObjType" = '13'
+	AND IFNULL(T0."U_REN_CON",0) != 0
+	AND T0."DataSource" = 'O'
+	AND T0."DocEntry" = :list_of_cols_val_tab_del;
+	
+	IF(IFNULL(:DocEntry,0)>0)
+	THEN
+		INSERT INTO "@REN_DRAFT" ("Code","Name")
+		VALUES (:list_of_cols_val_tab_del,:list_of_cols_val_tab_del);
+	END IF;
+			
+END IF; 
+
+
+/* Inicio validador borradores */
+DocEntry := 0;
+IF ((:object_type ='10000013' OR :object_type ='112')  AND (:transaction_type='A' OR :transaction_type='U' OR :transaction_type='C' OR :transaction_type='L')) 
+THEN
+	
+	SELECT 
+	COUNT(*)
+	INTO DocEntry
+	FROM "ODRF" T0
+	WHERE 
+	T0."ObjType" = '13'
+	AND IFNULL(T0."U_REN_CON",0) != 0
+	AND T0."DataSource" = 'O'
+	AND T0."DocEntry" = :list_of_cols_val_tab_del ;
+	
+	IF(IFNULL(:DocEntry,0)>0)
+	THEN
+		UPDATE "ODRF" L0 SET L0."U_REN_CTL" = 'N' WHERE L0."DocEntry" = :list_of_cols_val_tab_del;
+	END IF;
+			
+END IF; 
+/* Fin validador borradores */
+
+
+/* Inicio validador Facturas */
+DocEntry := 0;
+IF (:object_type = '13'  AND (:transaction_type='A')) 
+THEN
+	
+	SELECT 
+	COUNT(*)
+	INTO DocEntry
+	FROM "OINV" T0
+	WHERE 
+	IFNULL(T0."U_REN_CON",0) != 0
+	AND T0."DocEntry" = :list_of_cols_val_tab_del ;
+	
+	IF(IFNULL(:DocEntry,0)>0)
+	THEN
+		UPDATE "OINV" L0 SET L0."U_REN_CTL" = 'N' WHERE L0."DocEntry" = :list_of_cols_val_tab_del;
+	END IF;
+			
+END IF; 
+/* Fin validador Facturas */
+
+
+/* Autorizador en Cambio de estado */
+IF (:object_type = 'STA'  AND :transaction_type='U') 
+THEN
+
+		-- Verificar si hay datos antes de ejecutar el SELECT INTO
+		IF EXISTS (
+		    SELECT 1
+		    FROM "@REN_STATUS" T0        
+		    LEFT JOIN 
+		        (SELECT ROW_NUMBER() OVER(PARTITION BY A1."DocEntry" ORDER BY A1."DocEntry", A1."LogInst" DESC) AS "Fila",    
+		                A1."LogInst", A1."DocEntry", A1."U_Estado", A1."U_Comen_Aut"
+		         FROM "@AREN_STATUS" A1                                                                
+		        ) T1 ON T0."DocEntry" = T1."DocEntry" AND T1."Fila" = 2    
+		    INNER JOIN
+		        (SELECT A0."Owner", A1."ObjKey", A0."UpdateDate", A0."UpdateTime"
+		         FROM "OWLS" A0 
+		         INNER JOIN "WLS2" A1 ON A0."TaskID" = A1."TaskID" 
+		         AND A1."ObjectType" = 'STA'
+		         AND A0."TaskType" = 'U'
+		        ) T2 ON T0."DocEntry" = T2."ObjKey"
+		    WHERE 
+		        T0."DocEntry" = :list_of_cols_val_tab_del
+		        AND T0."U_Estado" != T1."U_Estado"
+		) THEN
+		    -- Ejecutar el SELECT INTO si existen datos
+		    SELECT TOP 1 
+		        IFNULL(T2."Owner", ''), 
+		        IFNULL(T2."UpdateDate", ''), 
+		        IFNULL(T2."UpdateTime", 0)
+		    INTO USERCODE, UPDATEDATE, UPDATETIME
+		    FROM "@REN_STATUS" T0        
+		    LEFT JOIN 
+		        (SELECT ROW_NUMBER() OVER(PARTITION BY A1."DocEntry" ORDER BY A1."DocEntry", A1."LogInst" DESC) AS "Fila",    
+		                A1."LogInst", A1."DocEntry", A1."U_Estado", A1."U_Comen_Aut"
+		         FROM "@AREN_STATUS" A1                                                                
+		        ) T1 ON T0."DocEntry" = T1."DocEntry" AND T1."Fila" = 2    
+		    INNER JOIN
+		        (SELECT A0."Owner", A1."ObjKey", A0."UpdateDate", A0."UpdateTime"
+		         FROM "OWLS" A0 
+		         INNER JOIN "WLS2" A1 ON A0."TaskID" = A1."TaskID" 
+		         AND A1."ObjectType" = 'STA'
+		         AND A0."TaskType" = 'U'
+		        ) T2 ON T0."DocEntry" = T2."ObjKey"
+		    WHERE 
+		        T0."DocEntry" = :list_of_cols_val_tab_del
+		        AND T0."U_Estado" != T1."U_Estado";
+		END IF;
+	
+	IF(IFNULL(:USERCODE,'')!='')
+	THEN
+		UPDATE "@REN_STATUS" L0 SET L0."U_Autori" = :USERCODE, L0."U_Fecha_Autori" = :UPDATEDATE, L0."U_Hora_Autori" = :UPDATETIME  WHERE L0."DocEntry" = :list_of_cols_val_tab_del;
+	END IF;
+			
+END IF; 
+/* Autorizador en Cambio de estado */
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+-- Select the return values
+select :error, :error_message FROM dummy;
+
+end;

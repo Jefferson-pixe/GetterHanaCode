@@ -1,3 +1,8 @@
+-- Schema : SBO_ALFISA
+-- Proc   : SBO_SP_POSTTRANSACTIONNOTICE
+-- Export : 2025-08-13 10:51:39
+-- Origen : 192.168.3.242
+
 CREATE PROCEDURE "SBO_ALFISA".SBO_SP_PostTransactionNotice
 (
 	in object_type nvarchar(30), 				-- SBO Object Type
@@ -53,7 +58,7 @@ END IF;
 
 
 
-/************************************* Este es un nuevo cambio para GIT #4 ****************************************/
+/************************************* Este es un nuevo cambio para GIT #5 ****************************************/
 
 
 

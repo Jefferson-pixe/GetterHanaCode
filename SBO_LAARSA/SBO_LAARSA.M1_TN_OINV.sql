@@ -1,0 +1,91 @@
+-- Schema : SBO_LAARSA
+-- Proc   : M1_TN_OINV
+-- Export : 2025-08-13 10:51:36
+-- Origen : 192.168.3.242
+
+CREATE PROCEDURE "M1_TN_OINV"	(	IN 		DocEntry 			INT,
+									IN 		transaction_type 	NCHAR(1), 
+									INOUT 	error 				INT, 
+									INOUT 	error_message 		nvarchar (200)
+								)
+LANGUAGE SQLSCRIPT AS
+	CUANTOS			INT;
+	U_REN_VEH		CHAR(50);
+	U_REN_CAR		CHAR(1);
+BEGIN
+	
+	SELECT	COUNT(*)
+	INTO	CUANTOS
+	FROM	OINV A
+	WHERE		A."DocEntry" 	= 	:DocEntry
+			AND	A."CANCELED"	=	'Y'
+			AND A."U_CAN"		=	'N';
+	
+	IF :CUANTOS>0 THEN
+		error:=1;
+		error_message:='ERROR: DEBE solicitar autorización para poder cancelar este documento.';
+	END IF;
+	
+	IF U_REN_CAR = 'A' THEN
+		SELECT COUNT (*)
+		INTO CUANTOS
+		FROM INV1 C
+		WHERE  C."DocEntry" = :DocEntry
+			   AND (C."U_REN_CAR" IS NULL OR C."U_REN_CAR" = '');
+			   
+		IF CUANTOS < 0 THEN
+			error:=1;
+			error_message:= 'Error: No puede dejar en blanco el codigo de vehiculo, ingrese el codigo para continuar.';
+		END IF;
+	END IF;
+	
+	SELECT	COUNT(*)
+	INTO	CUANTOS
+	FROM	INV1 B
+	WHERE		B."DocEntry"	=	:DocEntry
+			AND	IFNULL(B."U_REN_VEH",'')<>'';
+	
+	IF :CUANTOS>0 THEN
+		CREATE LOCAL TEMPORARY TABLE #U_REN_VEH
+		(	
+			"Code"			CHAR(50)	
+		);
+		
+		INSERT INTO #U_REN_VEH
+		SELECT	DISTINCT
+				B."U_REN_VEH"
+		FROM	INV1 B
+		WHERE		B."DocEntry"	=	:DocEntry
+				AND	IFNULL(B."U_REN_VEH",'')<>'';
+				
+		WHILE :CUANTOS>0 DO
+			SELECT 	TOP 1
+					"Code"
+			INTO	U_REN_VEH
+			FROM	#U_REN_VEH;
+			
+			CALL M1_SP_UPD_VEH(:U_REN_VEH);
+			
+			DELETE FROM	#U_REN_VEH
+			WHERE	RTRIM("Code")	=	RTRIM(:U_REN_VEH);
+			
+			SELECT	COUNT(*)
+			INTO	CUANTOS
+			FROM	#U_REN_VEH;
+		END WHILE;
+		
+		DROP TABLE #U_REN_VEH;
+		
+	END IF;
+	
+	
+	
+	-- Actualizo el campo auxiliar de DocEntry
+	IF :error_message='' THEN
+		UPDATE	OINV
+		SET		"U_DocEntry"	=	"DocEntry",
+				"U_CreateDate"	=	"CreateDate",
+				"U_CreateTime"	=	M1_FN_DocTime("DocTime")
+		WHERE	"DocEntry"		=	:DocEntry;
+	END IF;
+END
