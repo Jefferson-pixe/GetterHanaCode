@@ -1,6 +1,6 @@
 -- Schema : SBO_BLINTEC
 -- Proc   : SBO_SP_POSTTRANSACTIONNOTICE
--- Export : 2025-08-13 10:51:37
+-- Export : 2025-08-13 11:42:13
 -- Origen : 192.168.3.242
 
 CREATE PROCEDURE  "SBO_BLINTEC".SBO_SP_PostTransactionNotice

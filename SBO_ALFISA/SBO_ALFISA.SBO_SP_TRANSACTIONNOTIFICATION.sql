@@ -1,6 +1,6 @@
 -- Schema : SBO_ALFISA
 -- Proc   : SBO_SP_TRANSACTIONNOTIFICATION
--- Export : 2025-08-13 10:51:39
+-- Export : 2025-08-13 11:42:14
 -- Origen : 192.168.3.242
 
 CREATE PROCEDURE "SBO_ALFISA".SBO_SP_TransactionNotification

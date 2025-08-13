@@ -1,6 +1,6 @@
 -- Schema : SBO_LAARSA
 -- Proc   : M1_TN_OINV
--- Export : 2025-08-13 10:51:36
+-- Export : 2025-08-13 11:42:13
 -- Origen : 192.168.3.242
 
 CREATE PROCEDURE "M1_TN_OINV"	(	IN 		DocEntry 			INT,
